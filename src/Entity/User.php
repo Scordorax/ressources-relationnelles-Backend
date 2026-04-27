@@ -3,8 +3,6 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -25,7 +23,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private array $roles = [];
 
-    #[ORM\Column]
+    /**
+     * Null si compte FranceConnect sans mot de passe défini
+     */
+    #[ORM\Column(nullable: true)]
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
@@ -40,42 +41,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
-    #[ORM\Column(nullable: true)]
+    /**
+     * Identifiant unique renvoyé par FranceConnect (sub du token OIDC)
+     */
+    #[ORM\Column(nullable: true, unique: true)]
     private ?string $franceConnectId = null;
 
     /**
-     * @var Collection<int, Resource>
+     * Source de création du compte : 'local' | 'france_connect'
      */
-    #[ORM\OneToMany(targetEntity: Resource::class, mappedBy: 'author')]
-    private Collection $resources;
-
-    /**
-     * @var Collection<int, Activity>
-     */
-    #[ORM\OneToMany(targetEntity: Activity::class, mappedBy: 'createdBy')]
-    private Collection $activities;
-
-    /**
-     * @var Collection<int, Comment>
-     */
-    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'user')]
-    private Collection $comments;
-
-    /**
-     * @var Collection<int, ResourceInteraction>
-     */
-    #[ORM\OneToMany(targetEntity: ResourceInteraction::class, mappedBy: 'user')]
-    private Collection $resourceInteractions;
+    #[ORM\Column(length: 50)]
+    private string $authProvider = 'local';
 
     public function __construct()
     {
-        $this->createdAt       = new \DateTimeImmutable();
-        $this->isVerified      = false;
-        $this->resources       = new ArrayCollection();
-        $this->activities      = new ArrayCollection();
-        $this->comments        = new ArrayCollection();
-        $this->resourceInteractions = new ArrayCollection();
+        $this->createdAt = new \DateTimeImmutable();
+        $this->isVerified = false;
     }
+
+    // --- Getters / Setters ---
 
     public function getId(): ?int { return $this->id; }
 
@@ -94,7 +78,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setRoles(array $roles): self { $this->roles = $roles; return $this; }
 
     public function getPassword(): ?string { return $this->password; }
-    public function setPassword(string $password): self { $this->password = $password; return $this; }
+    public function setPassword(?string $password): self { $this->password = $password; return $this; }
 
     public function getFirstname(): ?string { return $this->firstname; }
     public function setFirstname(string $firstname): self { $this->firstname = $firstname; return $this; }
@@ -103,24 +87,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setLastname(string $lastname): self { $this->lastname = $lastname; return $this; }
 
     public function isVerified(): bool { return $this->isVerified; }
-    public function setIsVerified(bool $isVerified): self { $this->isVerified = $isVerified; return $this; }
+    public function setIsVerified(bool $v): self { $this->isVerified = $v; return $this; }
 
     public function getCreatedAt(): ?\DateTimeImmutable { return $this->createdAt; }
 
     public function getFranceConnectId(): ?string { return $this->franceConnectId; }
     public function setFranceConnectId(?string $id): self { $this->franceConnectId = $id; return $this; }
 
+    public function getAuthProvider(): string { return $this->authProvider; }
+    public function setAuthProvider(string $p): self { $this->authProvider = $p; return $this; }
+
     public function eraseCredentials(): void {}
 
-    /** @return Collection<int, Resource> */
-    public function getResources(): Collection { return $this->resources; }
-
-    /** @return Collection<int, Activity> */
-    public function getActivities(): Collection { return $this->activities; }
-
-    /** @return Collection<int, Comment> */
-    public function getComments(): Collection { return $this->comments; }
-
-    /** @return Collection<int, ResourceInteraction> */
-    public function getResourceInteractions(): Collection { return $this->resourceInteractions; }
+    public function isFranceConnectAccount(): bool
+    {
+        return $this->authProvider === 'france_connect';
+    }
 }

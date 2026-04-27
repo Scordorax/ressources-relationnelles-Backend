@@ -21,5 +21,9 @@ services:
         arguments:
             $secret: '%env(string:APP_JWT_SECRET)%'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    App\Service\Security\FranceConnectProvider:
+        arguments:
+            $clientId: '%env(FRANCE_CONNECT_CLIENT_ID)%'
+            $clientSecret: '%env(FRANCE_CONNECT_CLIENT_SECRET)%'
+            $redirectUri: '%env(FRANCE_CONNECT_REDIRECT_URI)%'
+            $baseUrl: '%env(FRANCE_CONNECT_BASE_URL)%'

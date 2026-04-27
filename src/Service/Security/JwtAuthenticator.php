@@ -2,7 +2,6 @@
 
 namespace App\Service\Security;
 
-use App\Entity\User;
 use App\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,16 +21,18 @@ class JwtAuthenticator extends AbstractAuthenticator
         private UserRepository $userRepository
     ) {}
 
+    /**
+     * Déclenché uniquement si le header Authorization: Bearer xxx est présent
+     */
     public function supports(Request $request): ?bool
     {
-        return $request->headers->has('Authorization')
-            && str_starts_with($request->headers->get('Authorization', ''), 'Bearer');
+        $header = $request->headers->get('Authorization', '');
+        return str_starts_with($header, 'Bearer ');
     }
 
     public function authenticate(Request $request): Passport
     {
-        $header = $request->headers->get('Authorization');
-        $token  = substr($header, 7);
+        $token = substr($request->headers->get('Authorization'), 7);
 
         try {
             $payload = $this->jwt->decode($token);
@@ -40,8 +41,8 @@ class JwtAuthenticator extends AbstractAuthenticator
         }
 
         return new SelfValidatingPassport(
-            new UserBadge($payload['email'], function (string $identifier) {
-                $user = $this->userRepository->findOneBy(['email' => $identifier]);
+            new UserBadge($payload['email'], function (string $email) {
+                $user = $this->userRepository->findOneBy(['email' => $email]);
 
                 if (!$user) {
                     throw new CustomUserMessageAuthenticationException('Utilisateur introuvable');
@@ -54,7 +55,7 @@ class JwtAuthenticator extends AbstractAuthenticator
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        return null; // Continue la requête
+        return null; // Laisse passer la requête
     }
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
