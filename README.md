@@ -33,7 +33,58 @@ Avant de commencer, assure-toi d'avoir installé :
 
 ---
 
-## Installation
+## Lancer le projet avec Docker (recommandé)
+
+C'est la méthode la plus simple — aucune installation de PHP, Composer ou MySQL sur ta machine.
+
+### Prérequis
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+C'est tout.
+
+### Démarrage
+
+```bash
+git clone <url-du-repo>
+cd ressources-relationnelles-Backend
+
+# Construire et démarrer tous les services
+docker compose up -d --build
+```
+
+Puis initialiser la base de données et les clés JWT :
+
+```bash
+docker compose exec app bash docker/init.sh
+```
+
+L'API est disponible sur **http://localhost:8080**
+La doc Swagger sur **http://localhost:8080/api**
+L'interface mail (Mailpit) sur **http://localhost:8025**
+
+### Commandes Docker utiles
+
+```bash
+# Voir les logs
+docker compose logs -f
+
+# Lancer une commande Symfony dans le conteneur
+docker compose exec app php bin/console <commande>
+
+# Accéder au shell du conteneur
+docker compose exec app bash
+
+# Arrêter les services
+docker compose down
+
+# Tout supprimer (conteneurs + volumes BDD)
+docker compose down -v
+```
+
+---
+
+## Installation manuelle (sans Docker)
 
 ### 1. Cloner le dépôt
 

@@ -1,18 +1,8 @@
+# Ce fichier est chargé automatiquement en dev par Docker Compose.
+# Il surcharge compose.yaml pour le développement local.
 
 services:
-###> doctrine/doctrine-bundle ###
-  database:
-    ports:
-      - "5432"
-###< doctrine/doctrine-bundle ###
-
-###> symfony/mailer ###
-  mailer:
-    image: axllent/mailpit
-    ports:
-      - "1025"
-      - "8025"
+  app:
     environment:
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
-###< symfony/mailer ###
+      APP_ENV: dev
+      APP_DEBUG: 1
