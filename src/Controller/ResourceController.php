@@ -13,14 +13,44 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/api/resources')]
 class ResourceController extends AbstractController
 {
-    public function __construct(private ResourceService $service) {}
+    public function __construct(private ResourceService $service)
+    {
+    }
 
     // PUBLIC — liste les ressources publiées (+ restreintes si connecté)
     #[Route('', methods: ['GET'])]
     public function index(): JsonResponse
     {
         $user = $this->getUser();
-        return $this->json($this->service->getAll($user));
+        $resources = $this->service->getAll($user);
+
+        $data = array_map(fn(Resource $r) => [
+            'id' => $r->getId(),
+            'title' => $r->getTitle(),
+            'content' => $r->getContent(),
+            'type' => $r->getType(),
+            'status' => $r->getStatus(),
+            'visibility' => $r->getVisibility(),
+            'createdAt' => $r->getCreatedAt()?->format(DATE_ATOM),
+            'updatedAt' => $r->getUpdatedAt()?->format(DATE_ATOM),
+
+            // 👇 CATEGORY PROPRE
+            'category' => $r->getCategory() ? [
+                'id' => $r->getCategory()->getId(),
+                'name' => $r->getCategory()->getName(),
+            ] : null,
+
+            'author' => $r->getAuthor() ? [
+                'id' => $r->getAuthor()->getId(),
+                'firstname' => $r->getAuthor()->getFirstname(),
+                'lastname' => $r->getAuthor()->getLastname(),
+            ] : null,
+
+            // relations optionnelles (tu peux enrichir plus tard)
+            'commentsCount' => count($r->getComments()),
+        ], $resources);
+
+        return $this->json($data);
     }
 
     // PUBLIC/CONNECTÉ selon visibilité
@@ -32,7 +62,26 @@ class ResourceController extends AbstractController
             $this->denyAccessUnlessGranted('ROLE_USER');
         }
 
-        return $this->json($this->service->getOne($resource));
+        return $this->json([
+            'id' => $resource->getId(),
+            'title' => $resource->getTitle(),
+            'content' => $resource->getContent(),
+            'type' => $resource->getType(),
+            'status' => $resource->getStatus(),
+            'visibility' => $resource->getVisibility(),
+            'createdAt' => $resource->getCreatedAt()?->format(DATE_ATOM),
+
+            'category' => $resource->getCategory() ? [
+                'id' => $resource->getCategory()->getId(),
+                'name' => $resource->getCategory()->getName(),
+            ] : null,
+
+            'author' => $resource->getAuthor() ? [
+                'id' => $resource->getAuthor()->getId(),
+                'firstname' => $resource->getAuthor()->getFirstname(),
+                'lastname' => $resource->getAuthor()->getLastname(),
+            ] : null,
+        ]);
     }
 
     // CONNECTÉ — création (passe en pending)

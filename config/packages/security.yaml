@@ -10,9 +10,9 @@ security:
                 property: email
 
     role_hierarchy:
-        ROLE_MODERATOR:   [ROLE_USER]
-        ROLE_ADMIN:       [ROLE_MODERATOR, ROLE_USER]
-        ROLE_SUPER_ADMIN: [ROLE_ADMIN, ROLE_MODERATOR, ROLE_USER]
+        ROLE_MODERATOR: [ ROLE_USER ]
+        ROLE_ADMIN: [ ROLE_MODERATOR, ROLE_USER ]
+        ROLE_SUPER_ADMIN: [ ROLE_ADMIN, ROLE_MODERATOR, ROLE_USER ]
 
     firewalls:
         dev:
@@ -32,8 +32,11 @@ security:
         - { path: ^/api/auth/login,           roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/refresh,         roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/france-connect,  roles: PUBLIC_ACCESS }
-        - { path: ^/api/resources$,           roles: PUBLIC_ACCESS, methods: [GET] }
-        - { path: ^/api/resources/\d+$,       roles: PUBLIC_ACCESS, methods: [GET] }
+        - { path: ^/api/resources$,           roles: PUBLIC_ACCESS, methods: [ GET ] }
+        - { path: ^/api/resources/\d+$,       roles: PUBLIC_ACCESS, methods: [ GET ] }
+        - { path: ^/api/categories,           roles: PUBLIC_ACCESS, methods: [ GET ] }
+        - { path: ^/api/resources/\d+/comments, roles: PUBLIC_ACCESS, methods: [ GET ] }
+        - { path: ^/api/stats,                roles: PUBLIC_ACCESS, methods: [ GET ] }
 
         # Routes protégées par rôle
         - { path: ^/api/superadmin, roles: ROLE_SUPER_ADMIN }

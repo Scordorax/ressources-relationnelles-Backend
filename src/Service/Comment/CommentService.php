@@ -22,10 +22,10 @@ class CommentService
         $resource = $this->getResource($resourceId);
 
         // Retourne uniquement les commentaires racines (sans parent)
-        return $this->commentRepository->findBy([
-            'resource' => $resource,
-            'parent'   => null,
-        ]);
+        return $this->commentRepository->findBy(
+            ['resource' => $resource],
+            ['createdAt' => 'DESC']
+        );
     }
 
     public function create(array $data, User $user, int $resourceId): Comment
