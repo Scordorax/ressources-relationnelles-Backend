@@ -20,7 +20,26 @@ class CommentController extends AbstractController
     #[Route('', methods: ['GET'])]
     public function list(int $resourceId): JsonResponse
     {
-        return $this->json($this->service->getByResourceId($resourceId));
+        $comments = $this->service->getByResourceId($resourceId);
+
+        return $this->json(array_map(function (Comment $comment) {
+            return [
+                'id' => $comment->getId(),
+                'content' => $comment->getContent(),
+                'createdAt' => $comment->getCreatedAt()?->format(DATE_ATOM),
+
+                'user' => $comment->getUser() ? [
+                    'id' => $comment->getUser()->getId(),
+                    'firstname' => $comment->getUser()->getFirstname(),
+                    'lastname' => $comment->getUser()->getLastname(),
+                ] : null,
+
+                // IMPORTANT : pas de resource complète
+                'resourceId' => $comment->getResource()?->getId(),
+
+                'parentId' => $comment->getParent()?->getId(),
+            ];
+        }, $comments));
     }
 
     // CONNECTÉ — poster un commentaire
@@ -33,9 +52,27 @@ class CommentController extends AbstractController
 
         try {
             $comment = $this->service->create($data, $this->getUser(), $resourceId);
-            return $this->json($comment, JsonResponse::HTTP_CREATED);
+
+            return $this->json([
+                'id' => $comment->getId(),
+                'content' => $comment->getContent(),
+                'createdAt' => $comment->getCreatedAt()?->format(DATE_ATOM),
+
+                'user' => [
+                    'id' => $comment->getUser()->getId(),
+                    'firstname' => $comment->getUser()->getFirstname(),
+                    'lastname' => $comment->getUser()->getLastname(),
+                ],
+
+                'resource' => [
+                    'id' => $comment->getResource()->getId(),
+                ],
+            ], Response::HTTP_CREATED);
+
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            return $this->json([
+                'error' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
         }
     }
 
@@ -49,9 +86,26 @@ class CommentController extends AbstractController
 
         try {
             $comment = $this->service->reply($data, $this->getUser(), $resourceId, $commentId);
-            return $this->json($comment, Response::HTTP_CREATED);
+
+            return $this->json([
+                'id' => $comment->getId(),
+                'content' => $comment->getContent(),
+                'createdAt' => $comment->getCreatedAt()?->format(DATE_ATOM),
+
+                'user' => [
+                    'id' => $comment->getUser()->getId(),
+                    'firstname' => $comment->getUser()->getFirstname(),
+                    'lastname' => $comment->getUser()->getLastname(),
+                ],
+
+                'resourceId' => $comment->getResource()->getId(),
+                'parentId' => $comment->getParent()?->getId(),
+            ], Response::HTTP_CREATED);
+
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            return $this->json([
+                'error' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
         }
     }
 }
