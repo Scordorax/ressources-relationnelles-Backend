@@ -17,11 +17,15 @@ class CommentService
         private ResourceRepository $resourceRepository
     ) {}
 
+    public function getCommentById(int $id): ?Comment
+    {
+        return $this->commentRepository->find($id);
+    }
+
     public function getByResourceId(int $resourceId): array
     {
         $resource = $this->getResource($resourceId);
 
-        // Retourne uniquement les commentaires racines (sans parent)
         return $this->commentRepository->findBy(
             ['resource' => $resource],
             ['createdAt' => 'DESC']
@@ -40,6 +44,9 @@ class CommentService
         $comment->setContent($data['content']);
         $comment->setUser($user);
         $comment->setResource($resource);
+
+        // 👇 important : compteur à 0
+        $comment->setIsReported(0);
 
         $this->em->persist($comment);
         $this->em->flush();
@@ -67,11 +74,46 @@ class CommentService
         $comment->setResource($resource);
         $comment->setParent($parent);
 
+        $comment->setIsReported(0);
+
         $this->em->persist($comment);
         $this->em->flush();
 
         return $comment;
     }
+
+    /* ───────────────────────────────
+     * 🚨 COMMENTAIRES SIGNALÉS
+     * ─────────────────────────────── */
+
+    public function getReported(): array
+    {
+        // 👇 tous les commentaires avec au moins 1 signalement
+        return $this->commentRepository->createQueryBuilder('c')
+            ->where('c.isReported > 0')
+            ->orderBy('c.isReported', 'DESC') // les plus signalés en premier
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function validate(Comment $comment): Comment
+    {
+        // ✅ on reset le compteur
+        $comment->setIsReported(0);
+
+        $this->em->flush();
+
+        return $comment;
+    }
+
+    public function reject(Comment $comment): void
+    {
+        // ❌ suppression du commentaire
+        $this->em->remove($comment);
+        $this->em->flush();
+    }
+
+    /* ─────────────────────────────── */
 
     private function getResource(int $id): Resource
     {
@@ -82,5 +124,26 @@ class CommentService
         }
 
         return $resource;
+    }
+
+    public function save(Comment $comment): void
+    {
+        $this->em->flush();
+    }
+
+    public function delete(Comment $comment): void
+    {
+        $this->em->remove($comment);
+        $this->em->flush();
+    }
+
+    public function report(Comment $comment): Comment
+    {
+        // +1 au compteur de signalement
+        $comment->setIsReported($comment->IsReported() + 1);
+
+        $this->em->flush();
+
+        return $comment;
     }
 }

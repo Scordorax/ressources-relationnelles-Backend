@@ -24,9 +24,24 @@ class ResourceInteractionController extends AbstractController
 
         try {
             $interaction = $this->service->interact($this->getUser(), $id, $data['type']);
-            return $this->json($interaction, Response::HTTP_CREATED);
+            return $this->json([
+                'id' => $interaction->getId(),
+                'type' => $interaction->getType(),
+                'createdAt' => $interaction->getCreatedAt()?->format(DATE_ATOM),
+
+                'resourceId' => $interaction->getResource()?->getId(),
+
+                'user' => [
+                    'id' => $interaction->getUser()?->getId(),
+                    'firstname' => $interaction->getUser()?->getFirstname(),
+                    'lastname' => $interaction->getUser()?->getLastname(),
+                ]
+            ], Response::HTTP_CREATED);
+
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            return $this->json([
+                'error' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
         }
     }
 
@@ -36,7 +51,19 @@ class ResourceInteractionController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ROLE_USER');
 
-        return $this->json($this->service->getByUserAndResource($this->getUser(), $id));
+        $interactions = $this->service->getByUserAndResource(
+            $this->getUser(),
+            $id
+        );
+
+        $data = array_map(fn($i) => [
+            'id' => $i->getId(),
+            'type' => $i->getType(),
+            'createdAt' => $i->getCreatedAt()?->format(DATE_ATOM),
+            'resourceId' => $i->getResource()?->getId(),
+        ], $interactions);
+
+        return $this->json($data);
     }
 
     // CONNECTÉ — supprimer une interaction
@@ -45,8 +72,16 @@ class ResourceInteractionController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ROLE_USER');
 
-        $this->service->remove($this->getUser(), $id, $type);
+        $this->service->remove(
+            $this->getUser(),
+            $id,
+            $type
+        );
 
-        return $this->json(['message' => 'Interaction supprimée']);
+        return $this->json([
+            'message' => 'Interaction supprimée'
+        ], Response::HTTP_OK);
     }
+
+
 }

@@ -11,8 +11,10 @@ class ResourceService
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private ResourceRepository $repository
-    ) {}
+        private ResourceRepository     $repository
+    )
+    {
+    }
 
     /**
      * Retourne les ressources publiées.
@@ -27,7 +29,7 @@ class ResourceService
 
         // Non connecté : publiées et publiques uniquement
         return $this->repository->findBy([
-            'status'     => 'published',
+            'status' => 'published',
             'visibility' => 'public',
         ]);
     }
@@ -45,7 +47,7 @@ class ResourceService
         $resource->setTitle($data['title']);
         $resource->setContent($data['content']);
         $resource->setType($data['type']);
-        $resource->setStatus('pending');
+        $resource->setStatus($data['status'] ?? 'draft');
         $resource->setVisibility($data['visibility'] ?? 'public');
         $resource->setAuthor($user);
 
@@ -96,5 +98,25 @@ class ResourceService
                 throw new \InvalidArgumentException("Le champ '$field' est requis");
             }
         }
+    }
+
+    public function validate(Resource $resource): Resource
+    {
+        $resource->setStatus('published');
+        $resource->setUpdatedAt(new \DateTimeImmutable());
+
+        $this->em->flush();
+
+        return $resource;
+    }
+
+    public function reject(Resource $resource): Resource
+    {
+        $resource->setStatus('rejected');
+        $resource->setUpdatedAt(new \DateTimeImmutable());
+
+        $this->em->flush();
+
+        return $resource;
     }
 }

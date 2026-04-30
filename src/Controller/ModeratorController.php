@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Comment;
+use App\Service\Comment\CommentService;
 use App\Service\Moderator\ModeratorService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -15,7 +16,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_MODERATOR')]
 class ModeratorController extends AbstractController
 {
-    public function __construct(private ModeratorService $service) {}
+    public function __construct(private ModeratorService $service, private CommentService $serviceComment)
+    {
+    }
 
     // Ressources en attente de validation
     #[Route('/resources/pending', methods: ['GET'])]
@@ -48,27 +51,59 @@ class ModeratorController extends AbstractController
         }
     }
 
-    // Commentaires signalés
-    #[Route('/comments/reported', methods: ['GET'])]
-    public function reportedComments(): JsonResponse
+    #[Route('/reported', methods: ['GET'])]
+    public function getReported(): JsonResponse
     {
-        return $this->json($this->service->getReportedComments());
+        $this->denyAccessUnlessGranted('ROLE_MODERATOR');
+
+        $comments = $this->serviceComment->getReported();
+
+        $data = array_map(fn(Comment $c) => [
+            'id' => $c->getId(),
+            'content' => $c->getContent(),
+            'createdAt' => $c->getCreatedAt()?->format(DATE_ATOM),
+
+            'isReported' => $c->isReported(),
+
+            'author' => $c->getUser() ? [
+                'id' => $c->getUser()->getId(),
+                'firstname' => $c->getUser()->getFirstname(),
+                'lastname' => $c->getUser()->getLastname(),
+            ] : null,
+
+            'resource' => $c->getResource() ? [
+                'id' => $c->getResource()->getId(),
+                'title' => $c->getResource()->getTitle(),
+            ] : null,
+
+        ], $comments);
+
+        return $this->json($data);
     }
 
-    // Supprimer un commentaire
-    #[Route('/comments/{id}', methods: ['DELETE'])]
-    public function deleteComment(Comment $comment): JsonResponse
+    #[Route('/{id}/validate', methods: ['POST'])]
+    public function validated(Comment $comment): JsonResponse
     {
-        $this->service->deleteComment($comment);
-        return $this->json(['message' => 'Commentaire supprimé']);
+        $this->denyAccessUnlessGranted('ROLE_MODERATOR');
+
+        $this->serviceComment->validate($comment);
+
+        return $this->json([
+            'message' => 'Commentaire validé'
+        ]);
     }
 
-    // Répondre à un commentaire (modération)
-    #[Route('/comments/{id}/reply', methods: ['POST'])]
-    public function replyComment(Comment $comment, Request $request): JsonResponse
+    #[Route('/{id}/reject', methods: ['POST'])]
+    public function rejected(Comment $comment): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-        $reply = $this->service->replyComment($comment, $this->getUser(), $data['content']);
-        return $this->json($reply, Response::HTTP_CREATED);
+        $this->denyAccessUnlessGranted('ROLE_MODERATOR');
+
+        $this->serviceComment->reject($comment);
+
+        return $this->json([
+            'message' => 'Commentaire supprimé'
+        ]);
     }
+
+
 }

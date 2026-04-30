@@ -92,11 +92,49 @@ class ResourceController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
+        if (!is_array($data)) {
+            return $this->json(['error' => 'Invalid JSON'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+        }
+
         try {
-            $resource = $this->service->create($data, $this->getUser());
-            return $this->json($resource, JsonResponse::HTTP_CREATED);
+            $resource = $this->service->create($data, $user);
+
+            return $this->json([
+                'id' => $resource->getId(),
+                'title' => $resource->getTitle(),
+                'content' => $resource->getContent(),
+                'type' => $resource->getType(),
+                'status' => $resource->getStatus(),
+                'visibility' => $resource->getVisibility(),
+                'createdAt' => $resource->getCreatedAt()?->format(DATE_ATOM),
+
+                'category' => $resource->getCategory() ? [
+                    'id' => $resource->getCategory()->getId(),
+                    'name' => $resource->getCategory()->getName(),
+                ] : null,
+
+                'author' => $resource->getAuthor() ? [
+                    'id' => $resource->getAuthor()->getId(),
+                    'firstname' => $resource->getAuthor()->getFirstname(),
+                    'lastname' => $resource->getAuthor()->getLastname(),
+                ] : null,
+            ], Response::HTTP_CREATED);
+
         } catch (\InvalidArgumentException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            return $this->json([
+                'error' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+
+        } catch (\Throwable $e) {
+            return $this->json([
+                'error' => 'Internal server error',
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -125,5 +163,31 @@ class ResourceController extends AbstractController
         $this->service->delete($resource);
 
         return $this->json(['message' => 'Ressource supprimée'], Response::HTTP_OK);
+    }
+
+    #[Route('/{id}/validate', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function validate(Resource $resource): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_MODERATOR');
+
+        $resource = $this->service->validate($resource);
+
+        return $this->json([
+            'id' => $resource->getId(),
+            'status' => $resource->getStatus(),
+        ]);
+    }
+
+    #[Route('/{id}/reject', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function reject(Resource $resource): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_MODERATOR');
+
+        $resource = $this->service->reject($resource);
+
+        return $this->json([
+            'id' => $resource->getId(),
+            'status' => $resource->getStatus(),
+        ]);
     }
 }

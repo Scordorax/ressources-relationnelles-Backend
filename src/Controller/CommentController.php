@@ -108,4 +108,22 @@ class CommentController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
     }
+
+    #[Route('/{commentId}/report', methods: ['POST'])]
+    public function report(int $resourceId, int $commentId): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_USER');
+
+        $comment = $this->service->getCommentById($commentId);
+
+        if (!$comment) {
+            return $this->json(['error' => 'Commentaire introuvable'], Response::HTTP_NOT_FOUND);
+        }
+
+        $this->service->report($comment);
+
+        return $this->json([
+            'message' => 'Commentaire signalé'
+        ]);
+    }
 }
