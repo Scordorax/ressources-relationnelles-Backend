@@ -119,7 +119,20 @@ class AdminService
         }
 
         // Désactivation du compte (ajout d'un rôle BANNED ou is_verified=false)
-        $user->setIsVerified(false);
+        $user->setIsVerified(1);
+        $this->em->flush();
+    }
+
+    public function unbanUser(int $id): void
+    {
+        $user = $this->userRepository->find($id);
+
+        if (!$user) {
+            throw new \Exception('Utilisateur introuvable');
+        }
+
+        // Désactivation du compte (ajout d'un rôle BANNED ou is_verified=false)
+        $user->setIsVerified(0);
         $this->em->flush();
     }
 

@@ -35,7 +35,16 @@ class AdminController extends AbstractController
     #[Route('/categories', methods: ['GET'])]
     public function listCategories(): JsonResponse
     {
-        return $this->json($this->service->getAllCategories());
+        $categories = $this->service->getAllCategories();
+
+        return $this->json(array_map(function ($category) {
+            return [
+                'id' => $category->getId(),
+                'name' => $category->getName(),
+                'description' => $category->getDescription(),
+                'createdAt' => $category->getCreatedAt()?->format(DATE_ATOM),
+            ];
+        }, $categories));
     }
 
     #[Route('/categories', methods: ['POST'])]
@@ -80,6 +89,13 @@ class AdminController extends AbstractController
     public function banUser(int $id): JsonResponse
     {
         $this->service->banUser($id);
+        return $this->json(['message' => 'Utilisateur banni']);
+    }
+
+    #[Route('/users/{id}/unban', methods: ['PUT'])]
+    public function unbanUser(int $id): JsonResponse
+    {
+        $this->service->unbanUser($id);
         return $this->json(['message' => 'Utilisateur banni']);
     }
 
