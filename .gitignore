@@ -54,3 +54,6 @@
 
 # Embedded web-server pid file
 /.web-server-pid
+
+/config/jwt/*.pem
+/config/jwt/*.key

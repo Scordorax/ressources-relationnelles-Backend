@@ -1,6 +1,9 @@
-
 services:
   app:
     environment:
       APP_ENV: dev
       APP_DEBUG: 1
+
+  database:
+    ports: !override
+      - "3307:3306"

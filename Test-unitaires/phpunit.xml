@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- Configuration PHPUnit pour les tests unitaires des Services -->
+<!-- Configuration PHPUnit — (RE)Sources Relationnelles -->
 <!-- Commande : ./vendor/bin/phpunit -c Test-unitaires/phpunit.xml -->
+<!-- Couverture : ./vendor/bin/phpunit -c Test-unitaires/phpunit.xml --coverage-html coverage/html -->
+<!-- Seuil exigé par le Bloc 3 : 90 % des lignes (contrôlé en CI). -->
 
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="../vendor/phpunit/phpunit/phpunit.xsd"
          colors="true"
          bootstrap="../tests/bootstrap.php"
-         cacheDirectory="../.phpunit.cache">
+         cacheDirectory="../.phpunit.cache"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="true"
+         failOnWarning="true">
 
     <php>
         <ini name="display_errors" value="1" />
@@ -19,11 +24,29 @@
         <testsuite name="Tests Unitaires - Services">
             <directory>Service</directory>
         </testsuite>
+        <testsuite name="Tests Unitaires - Entites">
+            <directory>Entity</directory>
+        </testsuite>
     </testsuites>
 
     <source>
         <include>
             <directory>../src/Service</directory>
+            <directory>../src/Entity</directory>
         </include>
+        <exclude>
+            <!-- Repositories : couverts par les tests d'intégration Doctrine -->
+            <directory>../src/Repository</directory>
+            <file>../src/Kernel.php</file>
+        </exclude>
     </source>
+
+    <coverage>
+        <report>
+            <html outputDirectory="../coverage/html" />
+            <text outputFile="php://stdout" showUncoveredFiles="true" />
+            <clover outputFile="../coverage/clover.xml" />
+        </report>
+    </coverage>
+
 </phpunit>
